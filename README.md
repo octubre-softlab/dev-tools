@@ -1,4 +1,4 @@
-# Repositorio de herraminetas.
+# Repositorio de herramientas.
 
 ### replace-template.sh
 * Clona un repositorio de Git.
