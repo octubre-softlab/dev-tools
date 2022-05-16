@@ -1,17 +1,17 @@
 #!/bin/bash
+#---------------------------------Colores
 # Reset
 Color_Off='\033[0m'       # Text Reset
-
 # Regular Colors
 Green='\033[0;32m'        # Green
 Yellow='\033[0;33m'       # Yellow
-
 # Bold
 BRed='\033[1;31m'         # Red
 BGreen='\033[1;32m'       # Green
 BWhite='\033[1;37m'       # White
+#---------------------------------Fin----Colores
 
-
+#---------------------------------Help
 Help()
 {
    # Display Help
@@ -64,7 +64,7 @@ Help()
    echo "v     Verbose replace"
    echo
 }
-
+#---------------------------------Fin----Help
 
 
 
@@ -141,6 +141,10 @@ then
 
     echo "Renaming files and directories..."
     #Reemplazar nombres de archivos
+    for file in $(find ./ -type f -iname *${TEMPLATE_VAR}* -print)
+    do
+        
+    done
     eval $(echo "mv ${BACKEND_SOLUTION_FILE} ${BACKEND_SOLUTION_FILE%/*}/${NEW_PROJECT_NAME}.sln")
     eval $(echo "mv ${BACKEND_PROJECT_FOLDER} ${BACKEND_PROJECT_FOLDER%/*}/${NEW_PROJECT_NAME}")
     eval $(echo "mv ${BACKEND_PROJECT_FOLDER%/*}/${NEW_PROJECT_NAME}/${BACKEND_PROJECT_FILE##*/} ${BACKEND_PROJECT_FOLDER%/*}/${NEW_PROJECT_NAME}/${NEW_PROJECT_NAME}.csproj")

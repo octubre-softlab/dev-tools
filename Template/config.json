@@ -1,0 +1,26 @@
+{
+  "Source":"https://gitlab.octubre.org.ar/dev/obelisco-api.git",
+  "SourceBranch":"master",
+  "Target":"https://gitlab.octubre.org.ar/dev/tango-api.git",
+  "TargetBranch" : "main",
+  "NewProjectName": "TangoAPI",
+  "NewGitRepository": "git@gitlab.octubre.org.ar:dev/tangoapi.git",
+  "Replacements": [
+    {
+        "Source":"ObeliscoAPI",
+        "Destination":"TangoAPI"
+    },
+    {
+        "Source":"obeliscoapi1",
+        "Destination":"tangoapi1"
+    },
+    {
+        "Source":"obeliscoapi",
+        "Destination":"tangoapi"
+    },
+    {
+        "Source":"obelisco-api",
+        "Destination":"tango-api"
+    }
+  ]
+}

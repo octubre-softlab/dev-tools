@@ -1,5 +1,5 @@
 # Repositorio de herramientas.
-
+https://superuser.com/questions/1122081/best-practices-for-multi-file-bash-scripts
 ### replace-template.sh
 * Clona un repositorio de Git.
 * Siguiendo la siguiente estructura de directorios reemplaza los nombres de los archivos y directorios del backend para adecuarlos al nuevo proyecto
