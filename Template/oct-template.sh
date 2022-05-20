@@ -20,7 +20,7 @@ while getopts "hivgqps" option; do
       i) Config
          exit;;
       v)
-        echo "Version 1.0.1-alpha"
+        echo "Version 1.0.2-alpha"
         exit;;
      \?) # Invalid option
          echo "Error: Invalid option"
@@ -102,7 +102,7 @@ for source in "${!r[@]}"; do
             echo
         fi
         if [[ ! -v "FLAGS[s]" ]]; then
-            eval $(echo mv ${folder} ${folder%/*}/${FOLDER/$source/$NEW_NAME}})
+            eval $(echo mv ${folder} ${folder%/*}/${FOLDER/$source/$NEW_NAME})
         fi
     done
 done
