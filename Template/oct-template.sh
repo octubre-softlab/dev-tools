@@ -1,33 +1,75 @@
 #!/bin/bash
 Help(){
-    echo "Mostrar ayuda"
+    echo "oct-template es una herramienta que nos permite clonar repositorios realizando reemplazos de nombres tanto en carpetas y archivos, como asi tambien dentro del contenido de los mismos"
     echo ""
     echo ""
     echo ""
 }
 
 Config(){
-    echo '{"Source":"gitreposource","SourceBranch":"gitbranchsource","Target":"gitrepotarget","TargetBranch":"gitbranchtarget","Replacements":[{"Search":"SearchText","Replace":"ReplaceText"}]}' | jq . > config.json || echo "Archivo de configuracion generado"
+    echo '{"Source":"gitreposource","SourceBranch":"gitbranchsource","Target":"gitrepotarget","TargetBranch":"gitbranchtarget","Replacements":[{"Search":"SearchText","Replace":"ReplaceText"}]}' | jq . > ${1} || echo "Archivo de configuracion generado"
 }
 
 declare -A FLAGS
-# Get the options
-while getopts "hivgqps" option; do
-   case $option in
-      h) # display Help
+
+ARGUMENT_LIST=(
+  "help"
+  "git-clone"
+  "git-push"
+  "simulate"
+  "init:"
+  "version"
+  "quiet"
+)
+OPTION_LIST=(
+  "h"
+  "c"
+  "p"
+  "s"
+  "i:"
+  "v"
+  "q"
+)
+
+# read arguments
+opts=$(getopt \
+  --longoptions "$(printf "%s," "${ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "$(printf "%s," "${OPTION_LIST[@]}")" \
+  -- "$@"
+)
+
+eval set --$opts
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h | --help) # display Help
          Help
          exit;;
-      i) Config
+    -i | --init) Config $2
          exit;;
-      v)
+    -v | --version)
         echo "Version 1.0.2-alpha"
         exit;;
-     \?) # Invalid option
-         echo "Error: Invalid option"
-         exit;;
-      *)
-         FLAGS[$option]+=1;;
-   esac
+    -c | --git-clone)
+        echo "git clone"
+        FLAGS["g"]+=1
+        shift 1;;
+    -p | --git-push)
+        echo "git push"
+        FLAGS["p"]+=1
+        shift 1;;
+    -s | --simulate)
+        echo "Simular"
+        FLAGS["s"]+=1
+        shift 1;;
+    -q | --quiet)
+        echo "Quiet"
+        FLAGS["q"]+=1
+        shift 1;;
+    *)
+        shift 1;;
+  esac
 done
 
 CONFIG_JSON=$(cat)
@@ -69,6 +111,7 @@ if [[ -v "FLAGS[g]" ]] ; then
         #Eliminar Conexion con el repositorio del template
         git remote rm origin
         git remote add origin $TARGET
+        git branch -m $TARGET_BRANCH
     fi
 fi
 #---------------------------------Reemplazar nombres  / Carpetas
@@ -135,11 +178,12 @@ do
 done
 printf "${Color_Off}"
 #---------------------------------Push Previus Commits in New Repository
+
+git add .
+git commit -m "Project imported"
+
 if [[ ! -v "FLAGS[s]" && -v "FLAGS[p]" ]]; then
     git push -u origin --all
     git push -u origin --tags
 fi
-if [[ -v "FLAGS[s]" && -v "FLAGS[g]" ]]; then
-    rm -r ./*
-    rm -r ./.*
-fi
+
