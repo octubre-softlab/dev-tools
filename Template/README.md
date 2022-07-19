@@ -3,7 +3,7 @@ oct-template es una herramienta que nos permite clonar repositorios realizando r
 Para descargar la herramienta, debemos situarnos en el directorio donde queremos que quede guardada y ejecutar los siguientes comandos
 ```bash
 wget https://raw.githubusercontent.com/octubre-softlab/dev-tools/main/Template/oct-template.sh
-chmod +x replace-template.sh
+chmod +x oct-template.sh
 ```
 El script se está diseñado para ser ejecutado dentro de la carpeta donde va a quedar guardado nuestro proyecto. En los casos donde sea necesario clonar el repositorio de origen la misma se debe encontrar vacía. Tenga en cuenta también que la herramienta reconfigura el acceso a git para que los cambios se suban a un repositorio distinto al original. Por ello no se recomienda usarlo en una carpeta de trabajo de otro proyecto.
 
