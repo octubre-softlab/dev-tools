@@ -16,12 +16,45 @@ function ConvertTo-Env {
     }
 }
 
+function Get-Selected {
+    [CmdletBinding(RemotingCapability='None')]
+    param(
+        [Parameter(Mandatory)]
+        [Object[]]${InputList},
+        [String]${Message}
+    )
+    begin
+    {
+        $InputList | ForEach-Object {
+            $index = $InputList.IndexOf($_)
+            $appName = (Get-Culture).TextInfo.ToTitleCase($_)
+            $optionNumber = $index + 1
+            Write-Host "$optionNumber. $appName"
+        }
+        
+        
+        do {
+            try {
+                $numOk = $true
+                [int]$chosenNumber = Read-host ${Message}
+            } # end try
+            catch {
+               $numOK = $false
+            }
+        } # end do 
+        until (($chosenNumber -ge 1 -and $chosenNumber -le $InputList.Count) -and $numOK)
+
+        $selected = $InputList[$chosenNumber - 1]
+
+        return $selected
+    }
+}
+
 
 $AppConfigStoreName = $args[0]
 If(-Not $AppConfigStoreName) {
     $AppConfigStoreName = Read-host "Ingrese el Azure App Configuration Store name"
 }
-
 
 # az login
 
@@ -40,26 +73,7 @@ $apps = @($keyvalues | ForEach-Object {
 Write-Output ""
 Write-Output "Aplicaciones:"
 
-$apps | ForEach-Object {
-    $index = $apps.IndexOf($_)
-    $appName = (Get-Culture).TextInfo.ToTitleCase($_)
-    $optionNumber = $index + 1
-    Write-Output "$optionNumber. $appName"
-}
-
-
-do {
-    try {
-        $numOk = $true
-        [int]$chosenNumber = Read-host "Seleccione una aplicación"
-    } # end try
-    catch {
-       $numOK = $false
-    }
-} # end do 
-until (($chosenNumber -ge 1 -and $chosenNumber -le $apps.Count) -and $numOK)
-
-$selectedApp = $apps[$chosenNumber - 1];
+$selectedApp = Get-Selected $apps "Seleccione una aplicación"
 
 Write-Output "Aplicación seleccionada: "
 Write-Host "$selectedApp" -ForegroundColor Green
@@ -75,29 +89,10 @@ If($selectedApp -Eq "webapi") {
 
     $tenants = $tenants | Where-Object { $_ -inotmatch "@" -And $_ -Ne "Common" }
 
-    $tenants | ForEach-Object {
-        $index = $tenants.IndexOf($_)
-        $tenantName = $_
-        $optionNumber = $index + 1
-        Write-Output "$optionNumber. $tenantName"
-    }
-
-    do {
-        try {
-            $numOk = $true
-            [int]$chosenNumber = Read-host "Seleccione un tenant"
-        } # end try
-        catch {
-           $numOK = $false
-        }
-    } # end do 
-    until (($chosenNumber -ge 1 -and $chosenNumber -le $tenants.Count) -and $numOK)
-
-    $selectedTenant = $tenants[$chosenNumber - 1];
+    $selectedTenant = Get-Selected $tenants "Seleccione un tenant"
 
     Write-Output "Tenant seleccionado:"
     Write-Host "$selectedApp $selectedTenant" -ForegroundColor Green
-
 
     $selectedApp = "${selectedApp}:${selectedTenant}"
 }
@@ -111,28 +106,9 @@ $environments = @($keyvalues | Where-Object { $_.key -Like "${selectedApp}:*" }
                           | ForEach-Object { $_.label } 
                           | Select-Object -Unique)
 
-$environments | ForEach-Object {
-    $index = $environments.IndexOf($_)
-    $envName = (Get-Culture).TextInfo.ToTitleCase($_)
-    $optionNumber = $index + 1
-    Write-Output "$optionNumber. $envName"
-}
+$selectedEnv = Get-Selected $environments "Seleccione un ambiente"
 
-
-do {
-    try {
-        $numOk = $true
-        [int]$chosenNumber = Read-host "Seleccione un ambiente"
-    } # end try
-    catch {
-        $numOK = $false
-    }
-} # end do 
-until (($chosenNumber -ge 1 -and $chosenNumber -le $environments.Count) -and $numOK)
-
-$selectedEnv = $environments[$chosenNumber - 1]
-
-Write-Output "Environment seleccionado:"
+Write-Output "Ambiente seleccionado:"
 Write-Host "$selectedApp $selectedEnv" -ForegroundColor Green
 
 Write-Output ""
