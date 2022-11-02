@@ -9,7 +9,7 @@ Este script sirve para obtener secret.json o .env files a partir
 
 2. Hacer login en azure: `az login`
 
-3. Ejecutar script `./Get-EnvFile.ps1 nombre-de-appconfigstore`
+3. Ejecutar script `./Get-EnvFile.ps1 appcs-aaa-prd-ue`
 
 ```
 .\Get-EnvFile.ps1
