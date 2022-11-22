@@ -10,7 +10,7 @@ function ConvertTo-Env {
         $InputObject.Keys | ForEach-Object {
             $key = $_.Replace(":","__")
             $value = $InputObject[$_].Replace("`n","\n")
-            [void]$sb.AppendLine("${key}=${value}")
+            [void]$sb.AppendLine("${key}=`"${value}`"")
         }
         return $sb.ToString()
     }
