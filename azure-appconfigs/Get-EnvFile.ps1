@@ -9,7 +9,7 @@ function ConvertTo-PortainerEnv {
         $sb = [System.Text.StringBuilder]::new()
         $InputObject.Keys | ForEach-Object {
             $key = $_.Replace(":","__")
-            $value = $InputObject[$_].Replace("`n","\n").Replace("$","$$").Replace("%","%%")
+            $value = $InputObject[$_].Replace("`n","\n").Replace("$",'$$').Replace("%",'%%')
             [void]$sb.AppendLine("${key}=`"${value}`"")
         }
         return $sb.ToString()
