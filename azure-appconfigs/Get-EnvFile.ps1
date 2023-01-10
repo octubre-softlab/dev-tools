@@ -1,4 +1,4 @@
-function ConvertTo-Env {
+function ConvertTo-PortainerEnv {
     [CmdletBinding(RemotingCapability='None')]
     param(
         [Parameter(Mandatory,ValueFromPipeline)]
@@ -9,7 +9,7 @@ function ConvertTo-Env {
         $sb = [System.Text.StringBuilder]::new()
         $InputObject.Keys | ForEach-Object {
             $key = $_.Replace(":","__")
-            $value = $InputObject[$_].Replace("`n","\n")
+            $value = $InputObject[$_].Replace("`n","\n").Replace("$","$$").Replace("%","%%")
             [void]$sb.AppendLine("${key}=`"${value}`"")
         }
         return $sb.ToString()
@@ -146,7 +146,7 @@ $tenantKeyvalues | Sort-Object -Property Label | ForEach-Object {
 
 $json = $result | ConvertTo-Json
 
-$envFile = $result | ConvertTo-Env
+$envFile = $result | ConvertTo-PortainerEnv
 
 
 Write-Output ""
@@ -154,5 +154,5 @@ Write-Host "JSON File" -ForegroundColor Green
 Write-Output $json
 
 Write-Output ""
-Write-Host "Env File" -ForegroundColor Green
+Write-Host "Portainer Env File" -ForegroundColor Green
 Write-Output $envFile
