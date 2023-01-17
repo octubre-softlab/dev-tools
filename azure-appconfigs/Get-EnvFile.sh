@@ -14,10 +14,13 @@ clear
 #TODO:
 #- [x] usar getops para tomar los parametros (-v version del script, -a app, -t tenant, -e environment, -l listar los objetos, -c configstore -h help que te muestra los comandos)
 #- [/] modularizar en funciones el script
+#- [ ] hacer distinct del common con las customizaciones del tenant
+#- [ ] escapar los key para el .env
 #- [ ] dar la opciones en json para dar la opcion de levantar el .json en el switch environment
 
 #Requisitos
-#instalar bash y jq
+#Usar esta imagen: docker pull mcr.microsoft.com/azure-cli
+#Tiene todo lo necesario
 
 #Functions section
 usage () {
