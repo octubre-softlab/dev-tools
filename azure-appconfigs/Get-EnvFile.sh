@@ -134,7 +134,7 @@ if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ]; then
   echo -e "Lista de ambientes disponibles: \n$ENVIRONMENTS"  
 fi
 
-if [ -z $SELECTEDENVIRONMENT]; then
+if [ -z $SELECTEDENVIRONMENT ]; then
   echo "Te dije que completes los parametros. Ay miguel!"
   exit 1;
 fi
@@ -153,6 +153,6 @@ if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ] && [ -n $SELECTEDENVIRONMENT ]
                           --label "$SELECTEDENVIRONMENT",\0 \
                           --resolve-keyvault --all)
 
-  echo $COMMONTENANTKEYVALUES | jq --raw-output 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
-  echo $TENANTKEYVALUES | jq --raw-output 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
+  echo $COMMONTENANTKEYVALUES | jq 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
+  echo $TENANTKEYVALUES | jq 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
 fi
