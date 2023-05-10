@@ -15,7 +15,7 @@ selectIndex() {
     while [[ 1 ]] ; do
         echo -n "Enter an option: "
         read input
-        if [[ "$input" =~ ^[0-$lenght]$ ]] ; then
+        if [[ "$input" -ge 0 && "$input" -le "$lenght" ]] ; then
             break
         fi
     done
