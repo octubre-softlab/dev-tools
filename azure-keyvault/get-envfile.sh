@@ -6,7 +6,9 @@ selectIndex() {
     for i in "${!list[@]}";
     do
         name=$(echo "${list[$i]}" | jq '.name' --raw-output)
-        echo "$i. $name"
+        appName=$(echo "${list[$i]}" | jq '.tags.ApplicationName // empty' --raw-output)
+        envName=$(echo "${list[$i]}" | jq '.tags.Environment // empty' --raw-output)
+        echo "$i. $name (${appName:=} ${envName:=})"
         i=$((i+1));
     done
 
@@ -49,7 +51,6 @@ groupId=$(echo "${groups[$index]}" | jq '.id' --raw-output)
 
 
 ## Select Azure Key Vault
-## TO DO Format: Tags.ApplicationName Tags.Environment (name) 
 
 vaultsJson=$(az resource list --resource-group $groupName --resource-type 'Microsoft.KeyVault/vaults')
 readarray -t vaults < <(echo $vaultsJson | jq -c '.[]')
@@ -62,15 +63,29 @@ vaultName=$(echo "${vaults[$index]}" | jq '.name' --raw-output)
 secretsJson=$(az keyvault secret list --vault-name $vaultName)
 readarray -t secrets < <(echo $secretsJson | jq -c '.[]')
 
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
-printf "\n${GREEN}Env File${NC}\n\n"
+
+env=""
+json="{"
+NEW_LINE=$'\n'
 
 for secret in "${secrets[@]}"; do
+    echo -n "."
     secretName=$(echo "$secret" | jq '.name' --raw-output)    
     secretValue=$(az keyvault secret show --name $secretName --vault-name $vaultName --query value -o tsv)
 
     envVarName=${secretName//--/__}
-    echo "$envVarName=$secretValue"    
+    json+="$NEW_LINE    \"${envVarName}\":\"${secretValue}\","
+    env+="$NEW_LINE${envVarName}=${secretValue}"  
 done
+
+json="${json::-1}" # Remove last coma
+json+="$NEW_LINE}"
+
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+printf "\n${GREEN}Env File${NC}\n\n"
+echo "$env"
+
+printf "\n${GREEN}JSON File${NC}\n\n"
+echo "$json"
 
