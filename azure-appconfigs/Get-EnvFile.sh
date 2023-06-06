@@ -17,10 +17,12 @@
 #- [ ] hacer distinct del common con las customizaciones del tenant
 #- [ ] escapar los key para el .env
 #- [ ] dar la opciones en json para dar la opcion de levantar el .json en el switch environment
+#- [ ] Hacer container propio docker run mcr.microsoft.com/azure-cli -v azure-appconfigs:data -it para ejecutar con variables de entorno
 
 #Requisitos
 #Usar esta imagen: docker pull mcr.microsoft.com/azure-cli
 #Tiene todo lo necesario
+
 
 #Functions section
 usage () {
@@ -50,7 +52,10 @@ listEnvironments(){
   ENVIRONMENTS=$(echo $KEYVALUES | jq --raw-output "map(select(.key | split(\":\")[0] == \"$SELECTEDAPP\")) | map(select(.key | split(\":\")[1] | split(\"@\")[0] == \"$SELECTEDTENANTS\")) | map(.label) | unique | .[]")
 }
 
-if [[ ${#} -eq 0 ]]; then
+#az login
+#az account set --subscription $subId
+
+if [ ${#} -eq 0 ]; then
    usage
 fi
 
