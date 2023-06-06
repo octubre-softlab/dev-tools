@@ -1,5 +1,5 @@
 #!/bin/bash
-clear
+#clear
 #set -xe
 #Eze querido: 
 # Aguante bash! abajo powershell!
@@ -33,22 +33,7 @@ usage () {
     -o        #Output format
     -t        #tenant to run this script
     -v        #Displaying version
-    Example: ./Get-EnvFile.sh -c appcs-sharedconf2-prd-ue -t SUTERH -a webapi"
-  exit 1
-}
-
-showHelp () {
-  echo -e " How to use parameters:
-    -a        #application to select. Ex: ./Get-EnvFile.sh -a webapi
-    -c        #configstore to use. Ex: ./Get-EnvFile.sh -c appcs-sharedconf2-prd-ue
-    -e        #environment (Test/Production) (case sensitive).  Ex: ./Get-EnvFile.sh -e Production
-    -o        #Output format: json or env.  Ex: ./Get-EnvFile.sh -o json
-    -t        #tenant to run this script. Ex: ./Get-EnvFile.sh -t SUTERH
-    How to execute commands:
-    -h        #Displaying help
-    -l        #list all objects from an item, example: -l -a    
-    -v        #Displaying version
-
+    -V        #Disable Verbose Mode
     Example: ./Get-EnvFile.sh -c appcs-sharedconf2-prd-ue -t SUTERH -a webapi"
   exit 1
 }
@@ -69,10 +54,13 @@ if [[ ${#} -eq 0 ]]; then
    usage
 fi
 
-while getopts "a:c:e:hlt:vo:" option; do
+while getopts "a:h:c:e:lt:vVpo:" option; do
     case $option in
         a)
             SELECTEDAPP=${OPTARG}
+            ;;
+        h)
+            SELECTEDHOST=${OPTARG}
             ;;
         c)
             APPCONFIGSTORENAME=${OPTARG}
@@ -80,8 +68,11 @@ while getopts "a:c:e:hlt:vo:" option; do
         e)
             SELECTEDENVIRONMENT=${OPTARG}
             ;;            
-        h)
-            showHelp
+        V)
+            VERBOSE=1
+            ;;
+        p)
+            PORTAINER=1
             ;;
         l)
             echo "Not implemented. Segui participando."
@@ -105,54 +96,59 @@ while getopts "a:c:e:hlt:vo:" option; do
 done
 
 if [ -z $APPCONFIGSTORENAME ]; then
-  echo "Ingrese el Azure App Configuration Store name";
+  [ -z $VERBOSE ] && echo "Ingrese el Azure App Configuration Store name";
   exit 1;
 fi
 
 # az login
 az configure --defaults appconfig_auth_mode="login"
-echo "Cargando los datos del Azure App Configuration..."
+if [ -z $SELECTEDAPP ] || [ -z $SELECTEDTENANTS ] || [ -z $SELECTEDENVIRONMENT ] || [ -z $SELECTEDHOST ]; then 
+  [ -z $VERBOSE ] && echo "Cargando los datos del Azure App Configuration..."
 
-KEYVALUES=$(az appconfig kv list -n $APPCONFIGSTORENAME --fields key label --all)
+  KEYVALUES=$(az appconfig kv list -n $APPCONFIGSTORENAME --fields key label --all)
 
-if [ -n $SELECTEDAPP ]; then
-  listApps
-  echo "App seleccionado: $SELECTEDAPP" 
-  echo -e "Lista de aplicaciones disponibles: \n $APPS"  
+  if [ -n $SELECTEDAPP ]; then
+    listApps
+    [ -z $VERBOSE ] &&  echo "App seleccionado: $SELECTEDAPP" 
+    [ -z $VERBOSE ] &&  echo -e "Lista de aplicaciones disponibles: \n $APPS"  
+  fi
+
+  if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ]; then
+    listTenants
+    [ -z $VERBOSE ] &&  echo "Tenant seleccionado: $SELECTEDTENANTS" 
+    [ -z $VERBOSE ] &&  echo -e "Lista de tenants disponibles: \n$TENANTS"  
+  fi
+
+
+  if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ]; then
+    listEnvironments
+    [ -z $VERBOSE ] && echo -e "Ambiente seleccionado: $SELECTEDENVIRONMENT" 
+    [ -z $VERBOSE ] && echo -e "Lista de ambientes disponibles: \n$ENVIRONMENTS"  
+  fi
+
+  if [ -z $SELECTEDENVIRONMENT ]; then
+    [ -z $VERBOSE ] && echo "Te dije que completes los parametros. Ay miguel!"
+    exit 1;
+  fi
 fi
-
-if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ]; then
-  listTenants
-  echo "Tenant seleccionado: $SELECTEDTENANTS" 
-  echo -e "Lista de tenants disponibles: \n$TENANTS"  
-fi
-
-
-if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ]; then
-  listEnvironments
-  echo -e "Ambiente seleccionado: $SELECTEDENVIRONMENT" 
-  echo -e "Lista de ambientes disponibles: \n$ENVIRONMENTS"  
-fi
-
-if [ -z $SELECTEDENVIRONMENT ]; then
-  echo "Te dije que completes los parametros. Ay miguel!"
-  exit 1;
-fi
-
-if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ] && [ -n $SELECTEDENVIRONMENT ]; then 
-  echo -e "Vamos a traer la informacion solicitada desde Azure. Aguarde unos instantes y sera atendido."
-  TENANTKEYVALUES=$(az appconfig kv list --name $APPCONFIGSTORENAME \
-                          --key "$SELECTEDAPP:$SELECTEDTENANTS*" \
-                          --label "$SELECTEDENVIRONMENT",\0 \
-                          --resolve-keyvault --all)
-
-  echo -e "Espere unos instantes más y sera atendido."
-  COMMONTENANTKEYVALUES=$(az appconfig kv list \
-                          --name $APPCONFIGSTORENAME \
-                          --key "$SELECTEDAPP:Common:*" \
-                          --label "$SELECTEDENVIRONMENT",\0 \
-                          --resolve-keyvault --all)
-
-  echo $COMMONTENANTKEYVALUES | jq 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
-  echo $TENANTKEYVALUES | jq 'map( [(.key | split(":")[2:] | join("__")),.value] | join("=") )| .[]'
+if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ] && [ -n $SELECTEDENVIRONMENT ] && [ -n $SELECTEDHOST ]; then 
+#Siguiendo el orden de prioridades definido en el repo hago las descargas en las variables KV1,KV2,....KVx  
+  [ -z $VERBOSE ] && echo $SELECTEDAPP:$SELECTEDTENANTS@$SELECTEDHOST/$SELECTEDENVIRONMENT
+  KV1=$(az appconfig kv list --name appcs-sharedconf2-prd-ue --key "webapi:Common:*" --label '\0' --resolve-keyvault --all)
+  KV2=$(az appconfig kv list --name $APPCONFIGSTORENAME --key "$SELECTEDAPP:Common:*" --label "$SELECTEDENVIRONMENT" --resolve-keyvault --all)
+  KV3=$(az appconfig kv list --name $APPCONFIGSTORENAME --key "$SELECTEDAPP:$SELECTEDTENANTS:*" --label '\0' --resolve-keyvault --all)
+  KV4=$(az appconfig kv list --name $APPCONFIGSTORENAME --key "$SELECTEDAPP:$SELECTEDTENANTS:*" --label "$SELECTEDENVIRONMENT" --resolve-keyvault --all)
+  KV5=$(az appconfig kv list --name $APPCONFIGSTORENAME --key "$SELECTEDAPP:$SELECTEDTENANTS@$SELECTEDHOST:*" --label '\0' --resolve-keyvault --all)
+  KV6=$(az appconfig kv list --name $APPCONFIGSTORENAME --key "$SELECTEDAPP:$SELECTEDTENANTS@$SELECTEDHOST:*" --label "$SELECTEDENVIRONMENT" --resolve-keyvault --all)
+  
+  KV1=$(echo $KV1 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:1} ]')
+  KV2=$(echo $KV2 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:2} ]')
+  KV3=$(echo $KV3 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:3} ]')
+  KV4=$(echo $KV4 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:4} ]')
+  KV5=$(echo $KV5 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:5} ]')
+  KV6=$(echo $KV6 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:6} ]')
+  
+  #Selecciona el mayor nivel de cada clave
+  KV=$(echo $KV1$KV2$KV3$KV4$KV5$KV6 | jq -s --raw-output '[.[]| .[]]' | jq 'group_by(.name) | map({ name: (.[0].name), value: .| max_by(.level) | .value}) ')
+  [ -z $PORTAINER ] && echo $KV | sed 's/\$/\$\$/g' || echo $KV  | jq --raw-output  '.[] | .name + "=" + .value' | sed 's/\$/\$\$/g'
 fi
