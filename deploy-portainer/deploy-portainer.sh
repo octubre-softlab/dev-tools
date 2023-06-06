@@ -17,6 +17,9 @@ while getopts "u:Pp:h:lc:uf:" option; do
         f)
             COMPOSE_FILE=${OPTARG}
             ;;
+        V)
+            VERBOSE=1
+            ;;
         P)
             # this will take password letter by letter
             while read -r -t 0; do read -r; done
@@ -129,17 +132,17 @@ create_stack()
 
 update_stack()
 {
-    echo "Update_Stack $1"
+    [ -z $VERBOSE ] && echo "Update_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     STACK_DEPLOYER=$(echo $STACK | jq --raw-output '.GitConfig.Authentication.Username')
     [ -z $VARIABLES_JSON ] && VARIABLES_JSON=$(echo $STACK | jq --raw-output '.Env')
     [ -z $TOKEN ] && login
     [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    #echo "$ENDPOINTID"
-    #echo "$TOKEN"
-    #echo "$STACKID"
-    #echo "$STACK_DEPLOYER"
+    [ -z $VERBOSE ] && echo "$ENDPOINTID"
+    [ -z $VERBOSE ] && echo "$TOKEN"
+    [ -z $VERBOSE ] && echo "$STACKID"
+    [ -z $VERBOSE ] && echo "$STACK_DEPLOYER"
     DATA=$( echo "{
         \"prune\": false,
         \"RepositoryUsername\": \"$STACK_DEPLOYER\",
@@ -147,7 +150,7 @@ update_stack()
         \"RepositoryAuthentication\":true,
         \"Env\": $VARIABLES_JSON
     }" | jq -c '.' )
-    #echo $DATA
+    [ -z $VERBOSE ] && echo $DATA
     echo $DATA |
      curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
      -X 'PUT' \
