@@ -1,5 +1,9 @@
 #!/bin/bash
 #set -xe
+
+#### bash azure-appconfigs/Get-EnvFile.sh -c appcs-sharedconf2-prd-ue -e Production -a webapi -V -t OctubreOSPERYH -h ndc-lnx-as-11 | bash deploy-portainer/deploy-portainer.sh -u ballesteros.d -p TuPasswordMiguel! -h ndc-lnx-as-11 -c webapi-cajasoctubre-production -f compose_apps/webapi/prod-linux/docker-compose.OctubreOSPERYH.Production.yml
+####
+
 [ ! -t 0 ] && INPUT=$(cat) || INPUT=""
 VARIABLES_JSON=$(echo $INPUT | jq --raw-output .)
 
