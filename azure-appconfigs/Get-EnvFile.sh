@@ -65,7 +65,8 @@ listEnvironments(){
 }
 
 #az login
-#az account set --subscription $subId
+#az account set --subscription $subId 
+az account set --subscription ba90edc7-0080-430e-830e-f5f222c33a0c
 
 if [ ${#} -eq 0 ]; then
    usage
