@@ -14,8 +14,8 @@
 #TODO:
 #- [x] usar getops para tomar los parametros (-v version del script, -a app, -t tenant, -e environment, -l listar los objetos, -c configstore -h help que te muestra los comandos)
 #- [/] modularizar en funciones el script
-#- [ ] hacer distinct del common con las customizaciones del tenant
-#- [ ] escapar los key para el .env
+#- [X] hacer distinct del common con las customizaciones del tenant
+#- [X] escapar los key para el .env
 #- [ ] dar la opciones en json para dar la opcion de levantar el .json en el switch environment
 #- [ ] Hacer container propio docker run mcr.microsoft.com/azure-cli -v azure-appconfigs:data -it para ejecutar con variables de entorno
 
@@ -23,6 +23,18 @@
 #Usar esta imagen: docker pull mcr.microsoft.com/azure-cli
 #Tiene todo lo necesario
 
+
+#Recibir por stdin un json para agregar a las configuraciones
+#La estructura esperada es 
+#[
+#  {
+#    "name":"NOMBRE_VARIABLE",
+#    "value":"VALOR_VARIABLE",
+#    "nivel":7 //Pisa todos los valores que pueda existir
+#  }
+#]
+[ ! -t 0 ] && INPUT=$(cat) || INPUT=""
+KV7=$(echo $INPUT | jq --raw-output .)
 
 #Functions section
 usage () {
@@ -154,6 +166,6 @@ if [ -n $SELECTEDAPP ] && [ -n $SELECTEDTENANTS ] && [ -n $SELECTEDENVIRONMENT ]
   KV6=$(echo $KV6 | jq --raw-output '[ .[] | {name:(.key | split(":")[2:] | join("__")), value:("\"" + (.value | gsub("\n";"\\n")) + "\""), level:6} ]')
   
   #Selecciona el mayor nivel de cada clave
-  KV=$(echo $KV1$KV2$KV3$KV4$KV5$KV6 | jq -s --raw-output '[.[]| .[]]' | jq 'group_by(.name) | map({ name: (.[0].name), value: .| max_by(.level) | .value}) ')
+  KV=$(echo $KV1$KV2$KV3$KV4$KV5$KV6$KV7 | jq -s --raw-output '[.[]| .[]]' | jq 'group_by(.name) | map({ name: (.[0].name), value: .| max_by(.level) | .value}) ')
   [ -z $PORTAINER ] && echo $KV | sed 's/\$/\$\$/g' || echo $KV  | jq --raw-output  '.[] | .name + "=" + .value' | sed 's/\$/\$\$/g'
 fi

@@ -7,7 +7,7 @@
 [ ! -t 0 ] && INPUT=$(cat) || INPUT=""
 VARIABLES_JSON=$(echo $INPUT | jq --raw-output .)
 
-while getopts "u:Pp:h:lc:uf:" option; do
+while getopts "u:Pp:h:lc:uf:d:" option; do
     case $option in
         u)
             USER=${OPTARG}
@@ -51,6 +51,10 @@ while getopts "u:Pp:h:lc:uf:" option; do
             CREATE_STACK=1
             STACK_NAME=${OPTARG}
             ;;
+        d)
+            DESTROY_STACK=1
+            STACK_NAME=${OPTARG}
+            ;;
         ?)
             usage
             ;;
@@ -65,12 +69,12 @@ login()
         TOKEN=$(curl -s --location 'https://portainer.octubre.org.ar/api/auth' --header 'Content-Type: application/json' --data "{\"username\":\"$USER\",\"password\":\"$PASSWORD\"}" | jq --raw-output '.jwt')
         #echo $TOKEN
     else
-        echo "Invalid Credentials"
+        echo "Invalid Credentials (empty)"
         exit 127;
     fi
 
     if [ "$TOKEN" = "null" ]; then
-        echo "Invalid Credentials"
+        echo "Invalid Credentials (no token)"
         exit 127;
     fi
 }
@@ -163,6 +167,22 @@ update_stack()
      --data @-
 }
 
+delete_stack()
+{
+    [ -z $VERBOSE ] && echo "Delete_Stack $1"
+    STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
+    STACKID=$(echo $STACK | jq --raw-output ".Id")
+    [ -z $TOKEN ] && login
+    #[ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $VERBOSE ] && echo "$ENDPOINTID"
+    [ -z $VERBOSE ] && echo "$TOKEN"
+    [ -z $VERBOSE ] && echo "$STACKID"
+    [ -z $VERBOSE ] && echo $DATA
+    curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID" \
+    -X 'DELETE' \
+    -H "authorization: Bearer $TOKEN" \
+    -H 'content-type: application/json'
+}
 
 if [ -z $HOST ]; then
     echo "Host undefined"
@@ -177,3 +197,8 @@ fi
 if [[ $CREATE_STACK -eq 1 ]]; then
     create_or_update_stack $STACK_NAME
 fi
+
+if [[ $DESTROY_STACK -eq 1 ]]; then
+    delete_stack $STACK_NAME
+fi
+
