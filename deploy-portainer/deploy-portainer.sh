@@ -7,13 +7,16 @@
 [ ! -t 0 ] && INPUT=$(cat) || INPUT=""
 VARIABLES_JSON=$(echo $INPUT | jq --raw-output .)
 
-while getopts "u:Pp:h:lc:uf:d:" option; do
+while getopts "u:Pp:h:lc:uf:d:k:" option; do
     case $option in
         u)
             USER=${OPTARG}
             ;;
         p)
             PASSWORD=${OPTARG}
+            ;;
+        k)
+            API_KEY=${OPTARG}
             ;;
         h)
             HOST=${OPTARG}
@@ -64,32 +67,37 @@ done
 
 login()
 {
-    if [ -n $USER ] && [ -n $PASSWORD ]; then
-        #Login / Get Token
-        TOKEN=$(curl -s --location 'https://portainer.octubre.org.ar/api/auth' --header 'Content-Type: application/json' --data "{\"username\":\"$USER\",\"password\":\"$PASSWORD\"}" | jq --raw-output '.jwt')
-        #echo $TOKEN
+    if [ -n $API_KEY ]; then
+        AUTHORIZATION=$(echo X-API-Key:$API_KEY)
     else
-        echo "Invalid Credentials (empty)"
-        exit 127;
-    fi
+        if [ -n $USER ] && [ -n $PASSWORD ]; then
+            #Login / Get Token
+            TOKEN=$(curl -s --location 'https://portainer.octubre.org.ar/api/auth' --header 'Content-Type: application/json' --data "{\"username\":\"$USER\",\"password\":\"$PASSWORD\"}" | jq --raw-output '.jwt')
+            AUTHORIZATION=$(echo "Authorization: Bearer $TOKEN")
+            #echo $TOKEN
+        else
+            echo "Invalid Credentials (empty)"
+            exit 127;
+        fi
 
-    if [ "$TOKEN" = "null" ]; then
-        echo "Invalid Credentials (no token)"
-        exit 127;
+        if [ "$TOKEN" = "null" ]; then
+            echo "Invalid Credentials (no token)"
+            exit 127;
+        fi
     fi
 }
 
 list_stacks()
 {
-    [ -z $TOKEN ] && login
-    ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    curl -s --location 'https://portainer.octubre.org.ar/api/stacks' --header "Authorization: Bearer $TOKEN" | jq --raw-output " .[] | select(.EndpointId == $ENDPOINTID)"
+    [ -z $AUTHORIZATION ] && login
+    ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    curl -s --location 'https://portainer.octubre.org.ar/api/stacks' --header "$AUTHORIZATION" | jq --raw-output " .[] | select(.EndpointId == $ENDPOINTID)"
 }
 
 list_endpoints()
 {
-  [ -z $TOKEN ] && login
-  curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq --raw-output ".[] | .Name"
+  [ -z $AUTHORIZATION ] && login
+  curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq --raw-output ".[] | .Name"
 }
 
 create_or_update_stack()
@@ -114,10 +122,10 @@ create_stack()
         exit 127;
     fi
     echo "Create_Stack $1"
-    [ -z $TOKEN ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $AUTHORIZATION ] && login
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
     #echo "$ENDPOINTID"
-    #echo "$TOKEN"
+    #echo "$AUTHORIZATION"
     DATA=$(echo "{
         \"Name\": \"$1\",
         \"RepositoryURL\": \"https://gitlab.octubre.org.ar/dev/apps-deployments.git\",
@@ -132,7 +140,7 @@ create_stack()
       #echo $DATA
        echo $DATA |
        curl -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
-       -H "authorization: Bearer $TOKEN" \
+       -H "$AUTHORIZATION" \
        -H 'content-type: application/json' \
        --data @-
 
@@ -145,10 +153,10 @@ update_stack()
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     STACK_DEPLOYER=$(echo $STACK | jq --raw-output '.GitConfig.Authentication.Username')
     [ -z $VARIABLES_JSON ] && VARIABLES_JSON=$(echo $STACK | jq --raw-output '.Env')
-    [ -z $TOKEN ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $AUTHORIZATION ] && login
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
     [ -z $VERBOSE ] && echo "$ENDPOINTID"
-    [ -z $VERBOSE ] && echo "$TOKEN"
+    [ -z $VERBOSE ] && echo "$AUTHORIZATION"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo "$STACK_DEPLOYER"
     DATA=$( echo "{
@@ -162,7 +170,7 @@ update_stack()
     echo $DATA |
      curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
      -X 'PUT' \
-     -H "authorization: Bearer $TOKEN" \
+     -H "$AUTHORIZATION" \
      -H 'content-type: application/json' \
      --data @-
 }
@@ -172,15 +180,15 @@ delete_stack()
     [ -z $VERBOSE ] && echo "Delete_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
-    [ -z $TOKEN ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $AUTHORIZATION ] && login
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
     [ -z $VERBOSE ] && echo "$ENDPOINTID"
-    [ -z $VERBOSE ] && echo "$TOKEN"
+    [ -z $VERBOSE ] && echo "$AUTHORIZATION"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo $DATA
     curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
     -X 'DELETE' \
-    -H "authorization: Bearer $TOKEN" \
+    -H $AUTHORIZATION \
     -H 'content-type: application/json'
 }
 

@@ -21,6 +21,9 @@ while getopts "a:h:e:t:u:p:b:d:" option; do
         p)
             PASSWORD=${OPTARG}
             ;;
+        k)
+            API_KEY=${OPTARG}
+            ;;
         b)
             BRANCH=${OPTARG}
             ;;
@@ -51,4 +54,4 @@ REVIEW_VARS=$(echo "
 
 ENV_VARS=$(echo $REVIEW_VARS | Get-EnvFile -c appcs-sharedconf2-prd-ue -a $APP -t $TENANT -e $ENVIRONMENT -h $HOST -V) 
 
-echo $ENV_VARS | deploy-portainer -u $USER -p $PASSWORD -h $HOST -c review-$BRANCH -f compose_apps/webapi/review-linux/docker-compose.Review.yml
+echo $ENV_VARS | deploy-portainer -k $API_KEY -u $USER -p $PASSWORD -h $HOST -c review-$BRANCH -f compose_apps/webapi/review-linux/docker-compose.Review.yml -V
