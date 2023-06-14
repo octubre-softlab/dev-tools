@@ -173,12 +173,12 @@ delete_stack()
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     [ -z $TOKEN ] && login
-    #[ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "Authorization: Bearer $TOKEN" | jq ".[] | select(.Name == \"$HOST\") | .Id")
     [ -z $VERBOSE ] && echo "$ENDPOINTID"
     [ -z $VERBOSE ] && echo "$TOKEN"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo $DATA
-    curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID" \
+    curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
     -X 'DELETE' \
     -H "authorization: Bearer $TOKEN" \
     -H 'content-type: application/json'
