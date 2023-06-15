@@ -7,7 +7,7 @@
 [ ! -t 0 ] && INPUT=$(cat) || INPUT=""
 VARIABLES_JSON=$(echo $INPUT | jq --raw-output .)
 
-while getopts "u:Pp:h:lc:uf:d:k:" option; do
+while getopts "u:Pp:h:lc:uf:d:k:V" option; do
     case $option in
         u)
             USER=${OPTARG}
