@@ -54,4 +54,4 @@ REVIEW_VARS=$(echo "
 
 ENV_VARS=$(echo $REVIEW_VARS | Get-EnvFile -c appcs-sharedconf2-prd-ue -a $APP -t $TENANT -e $ENVIRONMENT -h $HOST -V) 
 
-echo $ENV_VARS | deploy-portainer -k $API_KEY -u $USER -p $PASSWORD -h $HOST -c review-$BRANCH -f compose_apps/webapi/review-linux/docker-compose.Review.yml -V
+echo $ENV_VARS | deploy-portainer -k $API_KEY -u $USER -p $PASSWORD -h $HOST -c review-$BRANCH -f compose_apps/webapi/review-linux/docker-compose.Review.yml 
