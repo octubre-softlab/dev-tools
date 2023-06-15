@@ -139,7 +139,7 @@ create_stack()
         }" | jq -c '.')
       #echo $DATA
        echo $DATA |
-       curl -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
+       curl --fail -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
        -H "$AUTHORIZATION" \
        -H 'content-type: application/json' \
        --data @-
@@ -168,7 +168,7 @@ update_stack()
     }" | jq -c '.' )
     [ -z $VERBOSE ] && echo $DATA
     echo $DATA |
-     curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
+     curl --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
      -X 'PUT' \
      -H "$AUTHORIZATION" \
      -H 'content-type: application/json' \
@@ -186,7 +186,7 @@ delete_stack()
     [ -z $VERBOSE ] && echo "$AUTHORIZATION"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo $DATA
-    curl -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
+    curl --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
     -X 'DELETE' \
     -H $AUTHORIZATION \
     -H 'content-type: application/json'
