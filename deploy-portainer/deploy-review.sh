@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -xe
 
-while getopts "a:h:e:t:u:p:b:d:" option; do
+while getopts "a:h:e:t:u:p:b:d:k:" option; do
     case $option in
         a)
             APP=${OPTARG}
