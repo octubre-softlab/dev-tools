@@ -138,11 +138,12 @@ create_stack()
         \"Env\": $VARIABLES_JSON
         }" | jq -c '.')
       #echo $DATA
-       echo $DATA |
-       curl --fail -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
+       RESPONSE=$(echo $DATA |
+       curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
        -H "$AUTHORIZATION" \
        -H 'content-type: application/json' \
-       --data @-
+       --data @-)
+    [ -z $VERBOSE ] && echo "$RESPONSE"
 
 }
 
@@ -167,12 +168,13 @@ update_stack()
         \"Env\": $VARIABLES_JSON
     }" | jq -c '.' )
     [ -z $VERBOSE ] && echo $DATA
-    echo $DATA |
-     curl --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
+    RESPONSE=$(echo $DATA |
+     curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
      -X 'PUT' \
      -H "$AUTHORIZATION" \
      -H 'content-type: application/json' \
-     --data @-
+     --data @-)
+    [ -z $VERBOSE ] && echo "$RESPONSE"
 }
 
 delete_stack()
@@ -186,10 +188,11 @@ delete_stack()
     [ -z $VERBOSE ] && echo "$AUTHORIZATION"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo $DATA
-    curl --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
+    RESPONSE=$(curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
     -X 'DELETE' \
     -H $AUTHORIZATION \
-    -H 'content-type: application/json'
+    -H 'content-type: application/json')
+    [ -z $VERBOSE ] && echo "$RESPONSE"
 }
 
 if [ -z $HOST ]; then
