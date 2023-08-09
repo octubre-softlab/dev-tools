@@ -74,7 +74,8 @@ for secret in "${secrets[@]}"; do
     secretValue=$(az keyvault secret show --name $secretName --vault-name $vaultName --query value -o tsv)
 
     envVarName=${secretName//--/__}
-    json+="$NEW_LINE    \"${envVarName}\":\"${secretValue}\","
+    jsonVarName=${secretName//--/:}
+    json+="$NEW_LINE    \"${jsonVarName}\":\"${secretValue}\","
     env+="$NEW_LINE${envVarName}=${secretValue}"  
 done
 
