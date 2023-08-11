@@ -1,6 +1,8 @@
 #!/bin/bash
 #set -xe
 
+# Source code https://github.com/octubre-softlab/dev-tools/blob/main/deploy-portainer/deploy-portainer.sh
+
 #### bash azure-appconfigs/Get-EnvFile.sh -c appcs-sharedconf2-prd-ue -e Production -a webapi -V -t OctubreOSPERYH -h ndc-lnx-as-11 | bash deploy-portainer/deploy-portainer.sh -u ballesteros.d -p TuPasswordMiguel! -h ndc-lnx-as-11 -c webapi-cajasoctubre-production -f compose_apps/webapi/prod-linux/docker-compose.OctubreOSPERYH.Production.yml
 ####
 
@@ -137,13 +139,21 @@ create_stack()
         \"RepositoryPassword\": \"$PASSWORD\",
         \"Env\": $VARIABLES_JSON
         }" | jq -c '.')
-      #echo $DATA
-       RESPONSE=$(echo $DATA |
-       curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
+    [ -z $VERBOSE ] && echo $DATA
+    RESPONSE=$(echo $DATA |
+       curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
        -H "$AUTHORIZATION" \
        -H 'content-type: application/json' \
        --data @-)
-    [ -z $VERBOSE ] && echo "$RESPONSE"
+    http_status=$(echo "$RESPONSE" | grep -Fi "HTTP/" | awk '{print $2}')
+    response_body=$(echo "$RESPONSE" | awk '/^\r$/ { body=1; next } body { print }')
+
+    echo "HTTP Status: $http_status"
+
+    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+        echo "Response Body: $response_body"
+    fi
 
 }
 
@@ -169,12 +179,20 @@ update_stack()
     }" | jq -c '.' )
     [ -z $VERBOSE ] && echo $DATA
     RESPONSE=$(echo $DATA |
-     curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
-     -X 'PUT' \
-     -H "$AUTHORIZATION" \
-     -H 'content-type: application/json' \
-     --data @-)
-    [ -z $VERBOSE ] && echo "$RESPONSE"
+        curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
+        -X 'PUT' \
+        -H "$AUTHORIZATION" \
+        -H 'content-type: application/json' \
+        --data @-)
+    http_status=$(echo "$RESPONSE" | grep -Fi "HTTP/" | awk '{print $2}')
+    response_body=$(echo "$RESPONSE" | awk '/^\r$/ { body=1; next } body { print }')
+
+    echo "HTTP Status: $http_status"
+    
+    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+        echo "Response Body: $response_body"
+    fi
 }
 
 delete_stack()
@@ -188,11 +206,15 @@ delete_stack()
     [ -z $VERBOSE ] && echo "$AUTHORIZATION"
     [ -z $VERBOSE ] && echo "$STACKID"
     [ -z $VERBOSE ] && echo $DATA
-    RESPONSE=$(curl -s --fail -i "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
-    -X 'DELETE' \
-    -H $AUTHORIZATION \
-    -H 'content-type: application/json')
-    [ -z $VERBOSE ] && echo "$RESPONSE"
+    RESPONSE=$(curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
+        -X 'DELETE' \
+        -H $AUTHORIZATION \
+        -H 'content-type: application/json')
+    
+    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+        echo "Response Body: $response_body"
+    fi
 }
 
 if [ -z $HOST ]; then
