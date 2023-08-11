@@ -139,7 +139,7 @@ create_stack()
         \"RepositoryPassword\": \"$PASSWORD\",
         \"Env\": $VARIABLES_JSON
         }" | jq -c '.')
-    [ -z $VERBOSE ] && echo $DATA
+    [ -n $VERBOSE ] && echo $DATA
     RESPONSE=$(echo $DATA |
        curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
        -H "$AUTHORIZATION" \
@@ -151,7 +151,7 @@ create_stack()
     echo "HTTP Status: $http_status"
 
     # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 
@@ -159,17 +159,17 @@ create_stack()
 
 update_stack()
 {
-    [ -z $VERBOSE ] && echo "Update_Stack $1"
+    [ -n $VERBOSE ] && echo "Update_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     STACK_DEPLOYER=$(echo $STACK | jq --raw-output '.GitConfig.Authentication.Username')
     [ -z $VARIABLES_JSON ] && VARIABLES_JSON=$(echo $STACK | jq --raw-output '.Env')
     [ -z $AUTHORIZATION ] && login
     [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    [ -z $VERBOSE ] && echo "$ENDPOINTID"
-    [ -z $VERBOSE ] && echo "$AUTHORIZATION"
-    [ -z $VERBOSE ] && echo "$STACKID"
-    [ -z $VERBOSE ] && echo "$STACK_DEPLOYER"
+    [ -n $VERBOSE ] && echo "$ENDPOINTID"
+    [ -n $VERBOSE ] && echo "$AUTHORIZATION"
+    [ -n $VERBOSE ] && echo "$STACKID"
+    [ -n $VERBOSE ] && echo "$STACK_DEPLOYER"
     DATA=$( echo "{
         \"prune\": false,
         \"RepositoryUsername\": \"$STACK_DEPLOYER\",
@@ -177,7 +177,7 @@ update_stack()
         \"RepositoryAuthentication\":true,
         \"Env\": $VARIABLES_JSON
     }" | jq -c '.' )
-    [ -z $VERBOSE ] && echo $DATA
+    [ -n $VERBOSE ] && echo $DATA
     RESPONSE=$(echo $DATA |
         curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
         -X 'PUT' \
@@ -189,30 +189,30 @@ update_stack()
 
     echo "HTTP Status: $http_status"
     
-    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    # Si VERBOSE tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 }
 
 delete_stack()
 {
-    [ -z $VERBOSE ] && echo "Delete_Stack $1"
+    [ -n $VERBOSE ] && echo "Delete_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     [ -z $AUTHORIZATION ] && login
     [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    [ -z $VERBOSE ] && echo "$ENDPOINTID"
-    [ -z $VERBOSE ] && echo "$AUTHORIZATION"
-    [ -z $VERBOSE ] && echo "$STACKID"
-    [ -z $VERBOSE ] && echo $DATA
+    [ -n $VERBOSE ] && echo "$ENDPOINTID"
+    [ -n $VERBOSE ] && echo "$AUTHORIZATION"
+    [ -n $VERBOSE ] && echo "$STACKID"
+    [ -n $VERBOSE ] && echo $DATA
     RESPONSE=$(curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
         -X 'DELETE' \
         -H $AUTHORIZATION \
         -H 'content-type: application/json')
     
-    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -z "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    # Si VERBOSE tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 }
