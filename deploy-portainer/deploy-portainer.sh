@@ -9,7 +9,7 @@
 [ ! -t 0 ] && INPUT=$(cat) || INPUT=""
 VARIABLES_JSON=$(echo $INPUT | jq --raw-output .)
 
-while getopts "u:Pp:h:lc:uf:d:k:V" option; do
+while getopts "u:Pp:h:r:lc:uf:d:a:k:V" option; do
     case $option in
         u)
             USER=${OPTARG}
@@ -17,11 +17,17 @@ while getopts "u:Pp:h:lc:uf:d:k:V" option; do
         p)
             PASSWORD=${OPTARG}
             ;;
+        a)
+            PORTAINER_ADDRESS=${OPTARG}
+            ;;
         k)
             API_KEY=${OPTARG}
             ;;
         h)
             HOST=${OPTARG}
+            ;;
+        r)
+            REPOSITORY_URL=${OPTARG}
             ;;
         f)
             COMPOSE_FILE=${OPTARG}
@@ -74,7 +80,7 @@ login()
     else
         if [ -n $USER ] && [ -n $PASSWORD ]; then
             #Login / Get Token
-            TOKEN=$(curl -s --location 'https://portainer.octubre.org.ar/api/auth' --header 'Content-Type: application/json' --data "{\"username\":\"$USER\",\"password\":\"$PASSWORD\"}" | jq --raw-output '.jwt')
+            TOKEN=$(curl -s --location "$PORTAINER_ADDRESS/api/auth" --header 'Content-Type: application/json' --data "{\"username\":\"$USER\",\"password\":\"$PASSWORD\"}" | jq --raw-output '.jwt')
             AUTHORIZATION=$(echo "Authorization: Bearer $TOKEN")
             #echo $TOKEN
         else
@@ -92,14 +98,14 @@ login()
 list_stacks()
 {
     [ -z $AUTHORIZATION ] && login
-    ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    curl -s --location 'https://portainer.octubre.org.ar/api/stacks' --header "$AUTHORIZATION" | jq --raw-output " .[] | select(.EndpointId == $ENDPOINTID)"
+    ENDPOINTID=$(curl -s --location "$PORTAINER_ADDRESS/api/endpoints" --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    curl -s --location "$PORTAINER_ADDRESS/api/stacks" --header "$AUTHORIZATION" | jq --raw-output " .[] | select(.EndpointId == $ENDPOINTID)"
 }
 
 list_endpoints()
 {
   [ -z $AUTHORIZATION ] && login
-  curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq --raw-output ".[] | .Name"
+  curl -s --location "$PORTAINER_ADDRESS/api/endpoints" --header "$AUTHORIZATION" | jq --raw-output ".[] | .Name"
 }
 
 create_or_update_stack()
@@ -125,12 +131,12 @@ create_stack()
     fi
     echo "Create_Stack $1"
     [ -z $AUTHORIZATION ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location "$PORTAINER_ADDRESS/api/endpoints" --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
     #echo "$ENDPOINTID"
     #echo "$AUTHORIZATION"
     DATA=$(echo "{
         \"Name\": \"$1\",
-        \"RepositoryURL\": \"https://gitlab.octubre.org.ar/dev/apps-deployments.git\",
+        \"RepositoryURL\": \"$REPOSITORY_URL\",
         \"RepositoryReferenceName\": \"\",
         \"ComposeFile\": \"$COMPOSE_FILE\",
         \"AdditionalFiles\": [],
@@ -139,9 +145,9 @@ create_stack()
         \"RepositoryPassword\": \"$PASSWORD\",
         \"Env\": $VARIABLES_JSON
         }" | jq -c '.')
-    [ -n $VERBOSE ] && echo $DATA
+    [ -n "$VERBOSE" ] && echo $DATA
     RESPONSE=$(echo $DATA |
-       curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
+       curl -s -D - "$PORTAINER_ADDRESS/api/stacks?endpointId=$ENDPOINTID&method=repository&type=2" \
        -H "$AUTHORIZATION" \
        -H 'content-type: application/json' \
        --data @-)
@@ -149,9 +155,9 @@ create_stack()
     response_body=$(echo "$RESPONSE" | awk '/^\r$/ { body=1; next } body { print }')
 
     echo "HTTP Status: $http_status"
-
-    # Si VERBOSE no tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    
+    # Si VERBOSE tiene valor o http_status esta fuera del rango 200, mostrar body
+    if [ -n "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 
@@ -159,17 +165,17 @@ create_stack()
 
 update_stack()
 {
-    [ -n $VERBOSE ] && echo "Update_Stack $1"
+    [ -n "$VERBOSE" ] && echo "Update_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     STACK_DEPLOYER=$(echo $STACK | jq --raw-output '.GitConfig.Authentication.Username')
-    [ -z $VARIABLES_JSON ] && VARIABLES_JSON=$(echo $STACK | jq --raw-output '.Env')
+    [ -z "$VARIABLES_JSON" ] && VARIABLES_JSON=$(echo $STACK | jq --raw-output '.Env')
     [ -z $AUTHORIZATION ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    [ -n $VERBOSE ] && echo "$ENDPOINTID"
-    [ -n $VERBOSE ] && echo "$AUTHORIZATION"
-    [ -n $VERBOSE ] && echo "$STACKID"
-    [ -n $VERBOSE ] && echo "$STACK_DEPLOYER"
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location "$PORTAINER_ADDRESS/api/endpoints" --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -n "$VERBOSE" ] && echo "$ENDPOINTID"
+    [ -n "$VERBOSE" ] && echo "$AUTHORIZATION"
+    [ -n "$VERBOSE" ] && echo "$STACKID"
+    [ -n "$VERBOSE" ] && echo "$STACK_DEPLOYER"
     DATA=$( echo "{
         \"prune\": false,
         \"RepositoryUsername\": \"$STACK_DEPLOYER\",
@@ -177,42 +183,48 @@ update_stack()
         \"RepositoryAuthentication\":true,
         \"Env\": $VARIABLES_JSON
     }" | jq -c '.' )
-    [ -n $VERBOSE ] && echo $DATA
+    [ -n "$VERBOSE" ] && echo $DATA
     RESPONSE=$(echo $DATA |
-        curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
+        curl -s -D - "$PORTAINER_ADDRESS/api/stacks/$STACKID/git/redeploy?endpointId=$ENDPOINTID" \
         -X 'PUT' \
         -H "$AUTHORIZATION" \
         -H 'content-type: application/json' \
         --data @-)
+    # echo "$RESPONSE"
     http_status=$(echo "$RESPONSE" | grep -Fi "HTTP/" | awk '{print $2}')
     response_body=$(echo "$RESPONSE" | awk '/^\r$/ { body=1; next } body { print }')
 
     echo "HTTP Status: $http_status"
     
     # Si VERBOSE tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    if [ -n "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 }
 
 delete_stack()
 {
-    [ -n $VERBOSE ] && echo "Delete_Stack $1"
+    [ -n "$VERBOSE" ] && echo "Delete_Stack $1"
     STACK=$(list_stacks | jq --raw-output "select(.Name == \"$1\")")
     STACKID=$(echo $STACK | jq --raw-output ".Id")
     [ -z $AUTHORIZATION ] && login
-    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location 'https://portainer.octubre.org.ar/api/endpoints' --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
-    [ -n $VERBOSE ] && echo "$ENDPOINTID"
-    [ -n $VERBOSE ] && echo "$AUTHORIZATION"
-    [ -n $VERBOSE ] && echo "$STACKID"
-    [ -n $VERBOSE ] && echo $DATA
-    RESPONSE=$(curl -s -i -D - "https://portainer.octubre.org.ar/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
+    [ -z $ENDPOINTID ] && ENDPOINTID=$(curl -s --location "$PORTAINER_ADDRESS/api/endpoints" --header "$AUTHORIZATION" | jq ".[] | select(.Name == \"$HOST\") | .Id")
+    [ -n "$VERBOSE" ] && echo "$ENDPOINTID"
+    [ -n "$VERBOSE" ] && echo "$AUTHORIZATION"
+    [ -n "$VERBOSE" ] && echo "$STACKID"
+    [ -n "$VERBOSE" ] && echo $DATA
+    RESPONSE=$(curl -s -D - "$PORTAINER_ADDRESS/api/stacks/$STACKID?endpointId=$ENDPOINTID&external=false" \
         -X 'DELETE' \
         -H $AUTHORIZATION \
         -H 'content-type: application/json')
     
+    http_status=$(echo "$RESPONSE" | grep -Fi "HTTP/" | awk '{print $2}')
+    response_body=$(echo "$RESPONSE" | awk '/^\r$/ { body=1; next } body { print }')
+
+    echo "HTTP Status: $http_status"
+    
     # Si VERBOSE tiene valor o http_status esta fuera del rango 200, mostrar body
-    if [ -n $VERBOSE ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
+    if [ -n "$VERBOSE" ] || [ "$http_status" -lt 200 -o "$http_status" -ge 300 ]; then
         echo "Response Body: $response_body"
     fi
 }
