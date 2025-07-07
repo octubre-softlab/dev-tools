@@ -1,0 +1,16 @@
+{
+  "Source": "https://gitlab.com/dev/mwa-project-template.git",
+  "SourceBranch": "main",
+  "Target": "https://gitlab.com/dev/my-app.git",
+  "TargetBranch": "main",
+  "Replacements": [
+    {
+      "Search": "Oct.MyProject",
+      "Replace": "My.App"
+    },
+    {
+      "Search": "octmyproject",
+      "Replace": "myapp"
+    }
+  ]
+}
