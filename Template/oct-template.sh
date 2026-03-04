@@ -7,15 +7,16 @@ Help() {
 }
 
 Config() {
-    echo '{"Source":"gitreposource","SourceBranch":"gitbranchsource","Target":"gitrepotarget","TargetBranch":"gitbranchtarget","Replacements":[{"Search":"SearchText","Replace":"ReplaceText"}]}' | jq . >${1} || echo "Archivo de configuracion generado"
+    echo '{"Source":"gitreposource","SourceBranch":"gitbranchsource","TargetFolder":"targetfolder","Replacements":[{"Search":"SearchText","Replace":"ReplaceText"}]}' | jq . >${1} || echo "Archivo de configuracion generado"
 }
+
+echo hola
 
 declare -A FLAGS
 
 ARGUMENT_LIST=(
     "help"
     "git-clone"
-    "git-push"
     "simulate"
     "init:"
     "version"
@@ -24,7 +25,6 @@ ARGUMENT_LIST=(
 OPTION_LIST=(
     "h"
     "c"
-    "p"
     "s"
     "i:"
     "v"
@@ -53,17 +53,12 @@ while [[ $# -gt 0 ]]; do
         exit
         ;;
     -v | --version)
-        echo "Version 1.0.2-alpha"
+        echo "Version 1.2.0-alpha"
         exit
         ;;
     -c | --git-clone)
         echo "git clone"
         FLAGS["g"]+=1
-        shift 1
-        ;;
-    -p | --git-push)
-        echo "git push"
-        FLAGS["p"]+=1
         shift 1
         ;;
     -s | --simulate)
@@ -81,13 +76,14 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
-
+echo hola2
 CONFIG_JSON=$(cat)
+echo hola2.5
 declare -A r
 for row in $(echo "${CONFIG_JSON}" | jq -r '.Replacements[] | "r[\(.Search)]+=\(.Replace)"'); do
     eval $(echo ${row})
 done
-
+echo hola3
 #---------------------------------Colores
 # Reset
 Color_Off='\033[0m' # Text Reset
@@ -102,26 +98,19 @@ BWhite='\033[1;37m' # White
 #---------------------------------Leer Configuracion
 SOURCE=$(echo "${CONFIG_JSON}" | jq -r '.Source')
 SOURCE_BRANCH=$(echo "${CONFIG_JSON}" | jq -r '.SourceBranch')
-TARGET=$(echo "${CONFIG_JSON}" | jq -r '.Target')
-TARGET_BRANCH=$(echo "${CONFIG_JSON}" | jq -r '.TargetBranch')
+TARGET_FOLDER=$(echo "${CONFIG_JSON}" | jq -r '.TargetFolder')
+# TARGET=$(echo "${CONFIG_JSON}" | jq -r '.Target')
+# TARGET_BRANCH=$(echo "${CONFIG_JSON}" | jq -r '.TargetBranch')
+echo hola4
+# Crea un directorio temporal y guarda la ruta en una variable
+temp_dir=$(mktemp -d)
 
-#Si existe el parametro -g el directorio de destino no debe existir y realiza el clone del repo
-if [[ -v "FLAGS[g]" ]]; then
-    #---------------------------------Salir si el directorio ya existe
-    if [ "$(ls -A)" ]; then
-        printf "${BRed}The directory is not empty. $file ${Color_Off}\n"
-        exit 1
-    fi
-    #---------------------------------Clonar Repositorio
+echo "Directorio temporal creado en: $temp_dir"
+cd $temp_dir
 
-    git clone $SOURCE .
-    if [[ ! -v "FLAGS[s]" ]]; then
-        #Eliminar Conexion con el repositorio del template
-        git remote rm origin
-        git remote add origin $TARGET
-        git branch -m $TARGET_BRANCH
-    fi
-fi
+git clone $SOURCE .
+git remote rm origin
+
 #---------------------------------Reemplazar nombres  / Carpetas
 for source in "${!r[@]}"; do
     NEW_NAME="${r[$source]}"
@@ -182,12 +171,10 @@ for file in $(find ./ -type f -name '*.csproj'); do
     fi
 done
 printf "${Color_Off}"
-#---------------------------------Push Previus Commits in New Repository
+# Copiar contenido a carpeta destino TARGET_FOLDER
+cp -r ./* "$TARGET_FOLDER"
+# #---------------------------------Push Previus Commits in New Repository
 
-git add .
-git commit -m "Project imported"
+# git add .
+# git commit -m "Project imported"
 
-if [[ ! -v "FLAGS[s]" && -v "FLAGS[p]" ]]; then
-    git push -u origin --all
-    git push -u origin --tags
-fi

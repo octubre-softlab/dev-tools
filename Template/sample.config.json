@@ -1,8 +1,7 @@
 {
   "Source": "https://gitlab.com/dev/mwa-project-template.git",
   "SourceBranch": "main",
-  "Target": "https://gitlab.com/dev/my-app.git",
-  "TargetBranch": "main",
+  "TargetFolder": "my-app",
   "Replacements": [
     {
       "Search": "Oct.MyProject",
