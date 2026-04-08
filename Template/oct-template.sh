@@ -10,8 +10,6 @@ Config() {
     echo '{"Source":"gitreposource","SourceBranch":"gitbranchsource","TargetFolder":"targetfolder","Replacements":[{"Search":"SearchText","Replace":"ReplaceText"}]}' | jq . >${1} || echo "Archivo de configuracion generado"
 }
 
-echo hola
-
 declare -A FLAGS
 
 ARGUMENT_LIST=(
@@ -76,14 +74,14 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
-echo hola2
+
 CONFIG_JSON=$(cat)
-echo hola2.5
+
 declare -A r
 for row in $(echo "${CONFIG_JSON}" | jq -r '.Replacements[] | "r[\(.Search)]+=\(.Replace)"'); do
     eval $(echo ${row})
 done
-echo hola3
+
 #---------------------------------Colores
 # Reset
 Color_Off='\033[0m' # Text Reset
@@ -99,9 +97,7 @@ BWhite='\033[1;37m' # White
 SOURCE=$(echo "${CONFIG_JSON}" | jq -r '.Source')
 SOURCE_BRANCH=$(echo "${CONFIG_JSON}" | jq -r '.SourceBranch')
 TARGET_FOLDER=$(echo "${CONFIG_JSON}" | jq -r '.TargetFolder')
-# TARGET=$(echo "${CONFIG_JSON}" | jq -r '.Target')
-# TARGET_BRANCH=$(echo "${CONFIG_JSON}" | jq -r '.TargetBranch')
-echo hola4
+
 # Crea un directorio temporal y guarda la ruta en una variable
 temp_dir=$(mktemp -d)
 
@@ -109,7 +105,8 @@ echo "Directorio temporal creado en: $temp_dir"
 cd $temp_dir
 
 git clone $SOURCE .
-git remote rm origin
+git checkout $SOURCE_BRANCH
+rm .git -rf
 
 #---------------------------------Reemplazar nombres  / Carpetas
 for source in "${!r[@]}"; do
@@ -172,7 +169,9 @@ for file in $(find ./ -type f -name '*.csproj'); do
 done
 printf "${Color_Off}"
 # Copiar contenido a carpeta destino TARGET_FOLDER
+shopt -s dotglob
 cp -r ./* "$TARGET_FOLDER"
+shopt -u dotglob
 # #---------------------------------Push Previus Commits in New Repository
 
 # git add .
