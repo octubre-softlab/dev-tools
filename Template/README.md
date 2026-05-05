@@ -1,7 +1,9 @@
 ## TL;DR
 ```bash
 # 1. Generar configuración
-./oct-template.sh --init ./config.json
+
+
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --init ./config.json
 
 # 2. Editar config.json con tus parámetros
 
@@ -9,10 +11,10 @@
 mkdir NuevoProyecto
 
 # 4. Simular cambios
-./oct-template.sh --git-clone --simulate < ./config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --git-clone --simulate < ./config.json
 
 # 5. Aplicar cambios
-./oct-template.sh --git-clone < ./config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --git-clone < ./config.json
 ```
 
 ## Introducción
@@ -25,7 +27,8 @@ oct-template es una herramienta que nos permite clonar repositorios realizando r
 - Copia el resultado final a la carpeta destino especificada
 - Modo simulación para previsualizaer cambios
 
-Para descargar la herramienta, debemos situarnos en el directorio donde queremos que quede guardada y ejecutar los siguientes comandos
+
+No es necesario descargar la herramienta ya que el comando puedo usarse directamente desde github, pero en caso de desear descargarla, debemos situarnos en el directorio donde queremos que quede guardada y ejecutar los siguientes comandos
 ```bash
 wget https://raw.githubusercontent.com/octubre-softlab/dev-tools/main/Template/oct-template.sh
 chmod +x oct-template.sh
@@ -50,7 +53,7 @@ Para clonar un proyecto debemos, inicialmente crear un archivo de configuración
 
 Se puede generar un ejemplo del archivo de configuración mediante el comando:
 ```bash
-./oct-template.sh –init ./config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) –init ./config.json
 ```
 
 ### Estructura del archivo de configuración
@@ -100,19 +103,19 @@ mkdir /ruta/completa/NuevoProyecto
 ## Clonar y Simular
 Ya listo el archivo de configuración la herramienta permite clonar el repositorio de origen y realizar una simulación sobre los archivos que se van a modificar. Para ello haremos uso de los argumentos --git-clone y --simulate:
 ```bash
-./oct-template.sh --git-clone --simulate < config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --git-clone --simulate < config.json
 ```
 
 ### Solo Simular
 En caso que necesitemos realizar ajustes en la configuración y deseemos ejecutar nuevamente la simulación, lo podemos realizar eliminando el argumento `--git-clone`. De esta forma la herramienta no va a clonar el repositorio de origen nuevamente, sino que va a asumir que ya existe en el directorio temporal:
 ```bash
-./oct-template.sh --simulate < config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --simulate < config.json
 ```
 
 ## Aplicar Cambios
 Para aplicar los cambios definitivamente:
 ```bash
-./oct-template.sh --git-clone < config.json
+bash <(curl -s https://raw.githubusercontent.com/octubre-softlab/dev-tools/refs/heads/main/Template/oct-template.sh) --git-clone < config.json
 ```
 
 Ejecutando el script de esta manera se realizarán los siguientes cambios:
